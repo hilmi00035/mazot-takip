@@ -2,7 +2,7 @@
   "name": "Kişisel Yol Asistanım - Mazot Takip",
   "short_name": "Mazot Takip",
   "description": "TIR şoförleri için yol günlüğü, mazot takibi, güzergah programlama ve hesap çizelgesi uygulaması",
-  "start_url": "./mazot-takip.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",

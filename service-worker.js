@@ -3,10 +3,10 @@
 // Not: Google Haritalar, konum, döviz gibi özellikler yine internet ister; ama uygulamanın
 // kendisi (kayıtlar, formlar, hesaplamalar) tamamen çevrimdışı çalışır.
 
-const ONBELLEK_ADI = 'mazot-takip-v1';
+const ONBELLEK_ADI = 'mazot-takip-v2';
 const ONBELLEKLENECEKLER = [
   './',
-  './mazot-takip.html',
+  './index.html',
   './manifest.json'
 ];
 
@@ -50,7 +50,7 @@ self.addEventListener('fetch', (event) => {
         .catch(() => {
           // Ana sayfa isteği başarısız olursa (tamamen çevrimdışıysa) önbellekteki ana sayfayı ver
           if (event.request.mode === 'navigate') {
-            return caches.match('./mazot-takip.html');
+            return caches.match('./index.html');
           }
         });
     })
