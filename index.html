@@ -1826,7 +1826,7 @@
 <body>
 
 <div class="card">
-  <div class="title">KİŞİSEL YOL ASİSTANIM <span class="versiyon">V74</span></div>
+  <div class="title">KİŞİSEL YOL ASİSTANIM <span class="versiyon">V76</span></div>
 
   <div class="ust-arac-satiri">
     <button type="button" class="yazi-boyutu-btn" onclick="temaDegistir()" id="temaBtn">☀️ Açık Tema</button>
@@ -2631,6 +2631,16 @@
         if(!kayitlar.resmiRapor) kayitlar.resmiRapor = {};
         if(kayitlar.aracPlaka) document.getElementById('aracPlaka').value = kayitlar.aracPlaka;
         if(kayitlar.dorsePlaka) document.getElementById('dorsePlaka').value = kayitlar.dorsePlaka;
+        // Açılışta da HÇ TACHO ile paylaşılan alanı güncel tut (kullanıcı hiç dokunmasa bile)
+        if(kayitlar.aracPlaka || kayitlar.dorsePlaka){
+          try{
+            localStorage.setItem('hc_paylasilan_arac', JSON.stringify({
+              aracPlaka: kayitlar.aracPlaka || '',
+              dorsePlaka: kayitlar.dorsePlaka || '',
+              guncelleme: Date.now()
+            }));
+          }catch(e){}
+        }
         if(kayitlar.tuketimSecenekleri && kayitlar.tuketimSecenekleri.length > 0){
           tuketimSecenekleri = kayitlar.tuketimSecenekleri;
         }
@@ -2661,6 +2671,17 @@
     kayitlar.aracPlaka = document.getElementById('aracPlaka').value;
     kayitlar.dorsePlaka = document.getElementById('dorsePlaka').value;
     kaydet();
+
+    // HÇ TACHO PRO ile paylaşılan alan — ikisi aynı adreste (hilmi00035.github.io) barındığı için
+    // aynı localStorage'ı paylaşıyorlar. Plaka bilgisini buraya da yazıyoruz ki HÇ TACHO açılışta
+    // otomatik alsın, sen iki yerde ayrı ayrı girmek zorunda kalmayasın.
+    try{
+      localStorage.setItem('hc_paylasilan_arac', JSON.stringify({
+        aracPlaka: kayitlar.aracPlaka,
+        dorsePlaka: kayitlar.dorsePlaka,
+        guncelleme: Date.now()
+      }));
+    }catch(e){}
   }
 
   // ---- ÇOKLU ARAÇ PROFİLİ ----
