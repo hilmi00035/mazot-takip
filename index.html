@@ -250,6 +250,41 @@
     gap:12px;
     margin-bottom:24px;
   }
+  .sefer-notu-kutusu{
+    background:var(--input-bg);
+    border:1px dashed var(--panel-border);
+    border-radius:10px;
+    padding:12px;
+    margin:-14px 0 24px;
+  }
+  .sefer-notu-baslik{
+    font-size:.76rem;
+    font-weight:700;
+    color:var(--muted);
+    margin-bottom:8px;
+  }
+  .sefer-notu-aciklama{
+    font-weight:400;
+    font-size:.68rem;
+    color:var(--muted);
+    opacity:.8;
+  }
+  .sefer-notu-satiri{
+    display:flex;
+    gap:8px;
+    margin-bottom:8px;
+  }
+  .sefer-notu-satiri:last-child{margin-bottom:0;}
+  .sefer-notu-satiri input, .sefer-notu-satiri select{
+    background:var(--panel);
+    border:1px solid var(--panel-border);
+    color:var(--text);
+    border-radius:8px;
+    padding:9px 11px;
+    font-size:.82rem;
+  }
+  .sefer-notu-satiri input{flex:1;}
+  .sefer-notu-satiri select{flex:0 0 auto;}
   .baglanti-kutusu label{
     display:block;
     font-size:.68rem;
@@ -970,6 +1005,16 @@
   }
   .gecmis-sefer-baslik{font-weight:800; font-size:.95rem;}
   .gecmis-sefer-alt{color:var(--muted); font-size:.76rem; margin-top:3px;}
+  .gecmis-sefer-notu{
+    font-size:.76rem;
+    color:var(--orange);
+    background:rgba(245,165,36,.08);
+    border:1px dashed rgba(245,165,36,.3);
+    border-radius:6px;
+    padding:6px 10px;
+    margin:8px 0;
+  }
+  .gecmis-sefer-notu b{color:var(--text);}
   .gecmis-sefer-ok{color:var(--muted); font-size:.9rem; transition:transform .2s ease;}
   .gecmis-sefer-karti.acik .gecmis-sefer-ok{transform:rotate(180deg);}
   .gecmis-ozet-grid{
@@ -1829,7 +1874,7 @@
 <body>
 
 <div class="card">
-  <div class="title">KİŞİSEL YOL ASİSTANIM <span class="versiyon">V78</span></div>
+  <div class="title">KİŞİSEL YOL ASİSTANIM <span class="versiyon">V80</span></div>
 
   <div class="ust-arac-satiri">
     <button type="button" class="yazi-boyutu-btn" onclick="temaDegistir()" id="temaBtn">☀️ Açık Tema</button>
@@ -1868,6 +1913,21 @@
         <span class="baglanti-isik" id="baglantiIsik"></span>
         <span id="baglantiMetin">Kontrol ediliyor...</span>
       </div>
+    </div>
+  </div>
+
+  <div class="sefer-notu-kutusu">
+    <div class="sefer-notu-baslik">📝 Bu Seferin Notu <span class="sefer-notu-aciklama">(sadece senin bilgin için — hiçbir hesaplamaya dahil edilmez)</span></div>
+    <div class="sefer-notu-satiri">
+      <input type="text" id="seferIstikamet" placeholder="İstikamet (örn. Almanya, Hollanda)" oninput="seferNotuKaydet()">
+    </div>
+    <div class="sefer-notu-satiri">
+      <input type="number" step="0.01" id="seferIsBedeli" placeholder="Bu Seferin İş Bedeli" oninput="seferNotuKaydet()">
+      <select id="seferIsBedeliParaBirimi" onchange="seferNotuKaydet()">
+        <option value="EUR">€ EUR</option>
+        <option value="TL">₺ TL</option>
+        <option value="USD">$ USD</option>
+      </select>
     </div>
   </div>
 
@@ -2653,6 +2713,9 @@
             }));
           }catch(e){}
         }
+        if(kayitlar.seferIstikamet) document.getElementById('seferIstikamet').value = kayitlar.seferIstikamet;
+        if(kayitlar.seferIsBedeli) document.getElementById('seferIsBedeli').value = kayitlar.seferIsBedeli;
+        if(kayitlar.seferIsBedeliParaBirimi) document.getElementById('seferIsBedeliParaBirimi').value = kayitlar.seferIsBedeliParaBirimi;
         if(kayitlar.tuketimSecenekleri && kayitlar.tuketimSecenekleri.length > 0){
           tuketimSecenekleri = kayitlar.tuketimSecenekleri;
         }
@@ -2694,6 +2757,14 @@
         guncelleme: Date.now()
       }));
     }catch(e){}
+  }
+
+  // ---- BU SEFERİN NOTU (İstikamet + İş Bedeli) — sadece bilgi amaçlı, hiçbir hesaplamaya girmez ----
+  function seferNotuKaydet(){
+    kayitlar.seferIstikamet = document.getElementById('seferIstikamet').value;
+    kayitlar.seferIsBedeli = document.getElementById('seferIsBedeli').value;
+    kayitlar.seferIsBedeliParaBirimi = document.getElementById('seferIsBedeliParaBirimi').value;
+    kaydet();
   }
 
   // ---- ÇOKLU ARAÇ PROFİLİ ----
@@ -2968,6 +3039,9 @@
         seferNo: kayitlar.seferSayaci,
         aracPlaka: kayitlar.aracPlaka || "",
         dorsePlaka: kayitlar.dorsePlaka || "",
+        seferIstikamet: kayitlar.seferIstikamet || "",
+        seferIsBedeli: kayitlar.seferIsBedeli || "",
+        seferIsBedeliParaBirimi: kayitlar.seferIsBedeliParaBirimi || "EUR",
         yolgunlugu: kayitlar.yolgunlugu,
         baslangic: kayitlar.baslangic,
         donus: kayitlar.donus
@@ -2985,6 +3059,9 @@
     kayitlar = { yolgunlugu: [], baslangic: [], donus: [], cop: [], guzergahGidis: [], guzergahDonus: [], sirketTalimat: [], aracPlaka: "", dorsePlaka: "", seferArsivi: seferArsiviYedek, seferSayaci: seferSayaciYedek, adresDefteri: adresDefteriYedek, aracProfilleri: aracProfilleriYedek, hesapCizelgesi: hesapCizelgesiYedek, hesapAciklamaDefteri: hesapAciklamaDefteriYedek, kisiselHesapCizelgesi: kisiselHesapCizelgesiYedek, kisiselAciklamaDefteri: kisiselAciklamaDefteriYedek };
     document.getElementById('aracPlaka').value = "";
     document.getElementById('dorsePlaka').value = "";
+    document.getElementById('seferIstikamet').value = "";
+    document.getElementById('seferIsBedeli').value = "";
+    document.getElementById('seferIsBedeliParaBirimi').value = "EUR";
     resmiRaporAlanIdleri.forEach(id => {
       const el = document.getElementById(id);
       if(el) el.value = "";
@@ -3819,6 +3896,13 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
         `;
       }
 
+      const paraBirimSembol = {EUR:'€', TL:'₺', USD:'$'};
+      const seferNotuHtml = (sefer.seferIstikamet || sefer.seferIsBedeli) ? `
+        <div class="gecmis-sefer-notu">
+          ${sefer.seferIstikamet ? `📍 <b>${escapeHtml(sefer.seferIstikamet)}</b>` : ''}
+          ${sefer.seferIsBedeli ? ` · 💰 İş Bedeli: <b>${(paraBirimSembol[sefer.seferIsBedeliParaBirimi]||'€')}${Number(sefer.seferIsBedeli).toLocaleString('tr-TR', {minimumFractionDigits:2})}</b>` : ''}
+        </div>` : '';
+
       const kart = document.createElement('div');
       kart.className = 'gecmis-sefer-karti';
       kart.innerHTML = `
@@ -3829,6 +3913,7 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
           </div>
           <span class="gecmis-sefer-ok">▾</span>
         </div>
+        ${seferNotuHtml}
         <div class="gecmis-ozet-grid">
           <div>Çıkış: <b>${oz.cikisKm.toLocaleString('tr-TR')} km / ${oz.cikisMazot} L</b></div>
           <div>Dönüş: <b>${oz.donusKm.toLocaleString('tr-TR')} km</b></div>
@@ -4941,12 +5026,24 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
       const cikisKmMetni = document.getElementById('cikisKm') ? document.getElementById('cikisKm').textContent : '-';
       const cikisMazotMetni = document.getElementById('cikisMazot') ? document.getElementById('cikisMazot').textContent : '-';
 
+      // Yol Avansı: elle yazılan ayrı bir kutu yerine, "💶 Yol Parası Ekle" ile girdiğin
+      // GERÇEK kayıtların toplamını kullanıyoruz — Hesap Çizelgesi'ndeki "Şirketten Alınan
+      // Yol Parası" ile burası artık birebir aynı sayıyı gösterecek.
+      const yolParasiKayitlari = (kayitlar.hesapCizelgesi || []).filter(k => k.kategori === 'yolparasi');
+      const yolParasiTLToplam = yolParasiKayitlari.filter(k => (k.paraBirimi||'TL') === 'TL').reduce((a,k) => a + (Number(k.tutar)||0), 0);
+      const yolParasiEURToplam = yolParasiKayitlari.filter(k => k.paraBirimi === 'EUR').reduce((a,k) => a + (Number(k.tutar)||0), 0);
+      // Elle bir şey yazılmışsa (opsiyonel, ekstra/farklı bir avans notu için) onu da üstüne ekle
+      const elleYolAvansiTL = parseFloat(document.getElementById('rpAvansTL').value) || 0;
+      const elleYolAvansiEUR = parseFloat(document.getElementById('rpAvansEUR').value) || 0;
+      const toplamYolAvansiTL = yolParasiTLToplam + elleYolAvansiTL;
+      const toplamYolAvansiEUR = yolParasiEURToplam + elleYolAvansiEUR;
+
       const veri = [];
       veri.push(["YURTDIŞI ŞOFÖR YOL MASRAF DÖKÜMÜ"]);
       veri.push([]);
       veri.push(["Adı Soyadı:", al('rpAdSoyad'), "", "Poz. No:", al('rpPozNo')]);
       veri.push(["Çekici (*):", document.getElementById('aracPlaka').value || '-', "", "Dorse (*):", document.getElementById('dorsePlaka').value || '-']);
-      veri.push(["Yol Avansı TL (*):", al('rpAvansTL'), "", "Yol Avansı € (*):", al('rpAvansEUR')]);
+      veri.push(["Yol Avansı TL (*):", fmtPara(toplamYolAvansiTL, 'TL') + (yolParasiKayitlari.length ? ' (Hesap Çizelgesi\'nden otomatik)' : ''), "", "Yol Avansı € (*):", fmtPara(toplamYolAvansiEUR, 'EUR') + (yolParasiKayitlari.length ? ' (Hesap Çizelgesi\'nden otomatik)' : '')]);
       veri.push(["Müşteriden Tahsil:", al('rpMusteriTahsil')]);
       veri.push([]);
       veri.push(["", "GİDİŞ SEFERİ", "", "", "DÖNÜŞ SEFERİ"]);
@@ -5031,9 +5128,26 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
       veri.push(["MASRAF TOPL.:", masrafToplamMetni]);
       veri.push(["HARÇILIK:", fmtPara(harcilik, 'TL')]);
       veri.push(["EKSTRALAR TOPLAMI:", fmtPara(ekstraToplam, 'TL')]);
-      veri.push(["ÇIKIŞ AVANSI (TL):", fmtPara(parseFloat(al('rpAvansTL'))||0, 'TL')]);
-      veri.push(["ÇIKIŞ AVANSI (€):", fmtPara(parseFloat(al('rpAvansEUR'))||0, 'EUR')]);
-      veri.push(["NOT: Yukarıdaki tutarlar farklı para birimlerinde olabileceğinden, SONUÇ (BORÇ/ALACAK) satırı şirketin kendi mutabakatı için elle hesaplanmalıdır."]);
+      veri.push(["ÇIKIŞ AVANSI (TL):", fmtPara(toplamYolAvansiTL, 'TL')]);
+      veri.push(["ÇIKIŞ AVANSI (€):", fmtPara(toplamYolAvansiEUR, 'EUR')]);
+      veri.push([]);
+
+      // SONUÇ (BORÇ/ALACAK) — artık gerçek verilerle, para birimi bazında hesaplanıyor
+      // (Harçılık ve Ekstralar TL kabul edilip TL masrafa ekleniyor; EUR masraflar ayrı kalıyor)
+      const masrafGruplari = {};
+      tumMasraflar.forEach(k => {
+        const pb = k.paraBirimi || 'TL';
+        masrafGruplari[pb] = (masrafGruplari[pb] || 0) + (Number(k.tutar) || 0);
+      });
+      const tlMasrafToplam = (masrafGruplari['TL'] || 0) + harcilik + ekstraToplam;
+      const eurMasrafToplam = masrafGruplari['EUR'] || 0;
+      const sonucTL = toplamYolAvansiTL - tlMasrafToplam;
+      const sonucEUR = toplamYolAvansiEUR - eurMasrafToplam;
+      veri.push(["SONUÇ (TL):", fmtPara(sonucTL, 'TL') + (sonucTL >= 0 ? ' (Şoförden Alacaklı)' : ' (Şoföre Borçlu)')]);
+      if(toplamYolAvansiEUR > 0 || eurMasrafToplam > 0){
+        veri.push(["SONUÇ (€):", fmtPara(sonucEUR, 'EUR') + (sonucEUR >= 0 ? ' (Şoförden Alacaklı)' : ' (Şoföre Borçlu)')]);
+      }
+      veri.push(["NOT: Bu sonuç, Hesap Çizelgesi'ndeki kayıtlı masraf ve yol parası verilerinden otomatik hesaplanmıştır. Diğer para birimlerinde (USD vb.) kayıt varsa ayrıca kontrol edin."]);
 
       const wb = XLSX.utils.book_new();
       const sayfa = XLSX.utils.aoa_to_sheet(veri);
