@@ -743,6 +743,9 @@
   }
   .hesap-yolparasi-deger.negatif{color:#ff5a5a;}
   .hesap-yolparasi-deger.pozitif{color:var(--green);}
+  .net-satir{margin-bottom:2px;}
+  .net-satir.pozitif{color:var(--green);}
+  .net-satir.negatif{color:#ff5a5a;}
 
   .resmi-rapor-kutusu{
     background:var(--panel);
@@ -1826,7 +1829,7 @@
 <body>
 
 <div class="card">
-  <div class="title">KİŞİSEL YOL ASİSTANIM <span class="versiyon">V76</span></div>
+  <div class="title">KİŞİSEL YOL ASİSTANIM <span class="versiyon">V78</span></div>
 
   <div class="ust-arac-satiri">
     <button type="button" class="yazi-boyutu-btn" onclick="temaDegistir()" id="temaBtn">☀️ Açık Tema</button>
@@ -2178,7 +2181,12 @@
         <option value="USD">$ USD</option>
       </select>
     </div>
-    <div id="hesapAciklamaHizli" class="hizli-secim-satiri hesap-aciklama-oneri"></div>
+    <details class="katlanir-bolum katlanir-ic">
+      <summary>💬 Sık kullanılan açıklamalar</summary>
+      <div class="katlanir-icerik">
+        <div id="hesapAciklamaHizli" class="hizli-secim-satiri hesap-aciklama-oneri" style="display:flex;"></div>
+      </div>
+    </details>
     <div class="add-row yol-parasi-satiri">
       <button type="button" class="yol-parasi-btn yol-parasi-eur" onclick="hesapYolParasiEkle('EUR')">💶 Yol Parası Ekle (EUR)</button>
       <button type="button" class="yol-parasi-btn yol-parasi-tl" onclick="hesapYolParasiEkle('TL')">💴 Yol Parası Ekle (TL)</button>
@@ -2204,8 +2212,12 @@
     </details>
   </div>
 
-  <h2 class="section">📋 Kayıtlar</h2>
-  <div id="hesapListesi"></div>
+  <details class="katlanir-bolum" open>
+    <summary>📋 Kayıtlar</summary>
+    <div class="katlanir-icerik">
+      <div id="hesapListesi"></div>
+    </div>
+  </details>
 
   <details class="katlanir-bolum">
     <summary>📤 Dışa Aktar (Excel / Fiş ZIP)</summary>
@@ -4742,7 +4754,7 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
               <span class="hesap-etiket">${hesapKategoriAdlari[k.kategori] || k.kategori}</span>
               <span class="hesap-etiket odeme-${k.odemeSekli || 'nakit'}">${hesapOdemeAdlari[k.odemeSekli] || k.odemeSekli || '-'}</span>
               ${k.ulke ? `<span class="hesap-etiket">${ulkeBilgisi[k.ulke] ? ulkeBilgisi[k.ulke].bayrak+' '+ulkeBilgisi[k.ulke].isim : escapeHtml(k.ulke)}</span>` : ''}
-              ${k.aracPlaka ? `<span class="hesap-etiket">🚚 ${escapeHtml(k.aracPlaka)}</span>` : ''}
+              ${k.aracPlaka ? `<span class="hesap-etiket">🚚 ${escapeHtml(k.aracPlaka)}${k.dorsePlaka ? ' / ' + escapeHtml(k.dorsePlaka) : ''}</span>` : ''}
             </div>
             <div class="hesap-karti-alt">
               <button class="duzenle-btn" onclick="hesapDuzenle(${i})">Düzenle</button>
@@ -4771,9 +4783,30 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
     const yolParasiListesi = liste.filter(k => k.kategori === 'yolparasi');
 
     document.getElementById('hesapToplamDeger').textContent = paraToplamMetni(masrafListesi);
-    document.getElementById('hesapYolParasiDeger').textContent = paraToplamMetni(yolParasiListesi);
 
-    // Net Durum = Alınan Yol Parası - Toplam Masraf (para birimi bazında ayrı ayrı)
+    // Yol Parası'nı EUR ve TL AYRI SATIRLARDA göster (tek satırda "€700 + ₺5000" yerine, her
+    // para birimi kendi net rakamıyla, karışmadan görünsün)
+    function paraGruplariniHesapla(altListe){
+      const gruplar = {};
+      altListe.forEach(k => {
+        const pb = k.paraBirimi || 'TL';
+        gruplar[pb] = (gruplar[pb] || 0) + (Number(k.tutar) || 0);
+      });
+      return gruplar;
+    }
+    function satirlarHTML(gruplar, ekSinif){
+      const anahtarlar = Object.keys(gruplar);
+      if(anahtarlar.length === 0) return `<div class="${ekSinif||''}">${fmtPara(0, 'TL')}</div>`;
+      return anahtarlar.map(pb => {
+        const pozNeg = ekSinif ? (gruplar[pb] >= 0 ? ' pozitif' : ' negatif') : '';
+        return `<div class="${(ekSinif||'')+pozNeg}">${fmtPara(gruplar[pb], pb)}</div>`;
+      }).join('');
+    }
+
+    const yolParasiGruplari = paraGruplariniHesapla(yolParasiListesi);
+    document.getElementById('hesapYolParasiDeger').innerHTML = satirlarHTML(yolParasiGruplari);
+
+    // Net Durum = Alınan Yol Parası - Toplam Masraf (para birimi bazında ayrı ayrı, ayrı satırlarda)
     const netGruplar = {};
     masrafListesi.forEach(k => {
       const pb = k.paraBirimi || 'TL';
@@ -4783,17 +4816,7 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
       const pb = k.paraBirimi || 'TL';
       netGruplar[pb] = (netGruplar[pb] || 0) + (Number(k.tutar) || 0);
     });
-    const netEl = document.getElementById('hesapNetDeger');
-    const netAnahtarlar = Object.keys(netGruplar);
-    if(netAnahtarlar.length === 0){
-      netEl.textContent = fmtPara(0, 'TL');
-      netEl.className = 'hesap-yolparasi-deger';
-    } else {
-      netEl.textContent = netAnahtarlar.map(pb => fmtPara(netGruplar[pb], pb)).join(' + ');
-      const hepsiPozitif = netAnahtarlar.every(pb => netGruplar[pb] >= 0);
-      const hepsiNegatif = netAnahtarlar.every(pb => netGruplar[pb] < 0);
-      netEl.className = 'hesap-yolparasi-deger' + (hepsiPozitif ? ' pozitif' : hepsiNegatif ? ' negatif' : '');
-    }
+    document.getElementById('hesapNetDeger').innerHTML = satirlarHTML(netGruplar, 'net-satir');
 
     const kategoriDokum = document.getElementById('hesapKategoriDokum');
     const kategoriler = [...new Set(masrafListesi.map(k => k.kategori))];
@@ -5370,7 +5393,7 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
               <span class="hesap-etiket">${kisiselKategoriAdlari[k.kategori] || k.kategori}</span>
               <span class="hesap-etiket odeme-${k.odemeSekli || 'nakit'}">${kisiselOdemeAdlari[k.odemeSekli] || k.odemeSekli || '-'}</span>
               ${k.ulke ? `<span class="hesap-etiket">${ulkeBilgisi[k.ulke] ? ulkeBilgisi[k.ulke].bayrak+' '+ulkeBilgisi[k.ulke].isim : escapeHtml(k.ulke)}</span>` : ''}
-              ${k.aracPlaka ? `<span class="hesap-etiket">🚚 ${escapeHtml(k.aracPlaka)}</span>` : ''}
+              ${k.aracPlaka ? `<span class="hesap-etiket">🚚 ${escapeHtml(k.aracPlaka)}${k.dorsePlaka ? ' / ' + escapeHtml(k.dorsePlaka) : ''}</span>` : ''}
             </div>
             <div class="hesap-karti-alt">
               <button class="duzenle-btn" onclick="kisiselDuzenle(${i})">Düzenle</button>
