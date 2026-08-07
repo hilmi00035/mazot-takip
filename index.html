@@ -789,6 +789,27 @@
     padding:14px;
     margin-bottom:20px;
   }
+  .sirket-ekstra-ozet{
+    background:rgba(168,85,247,.08);
+    border:1px solid rgba(168,85,247,.3);
+    border-radius:8px;
+    padding:12px;
+    font-size:.85rem;
+    line-height:1.7;
+  }
+  .sirket-ekstra-kayit{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:8px 10px;
+    background:var(--panel);
+    border:1px solid var(--panel-border);
+    border-radius:8px;
+    margin-bottom:6px;
+    font-size:.8rem;
+  }
+  .sirket-ekstra-kayit.tur-alinan{border-left:3px solid #a855f7;}
+  .sirket-ekstra-kayit.tur-harcanan{border-left:3px solid #f59e0b;}
   .resmi-rapor-onizleme{
     background:rgba(34,197,94,.06);
     border:1px solid rgba(34,197,94,.25);
@@ -1891,7 +1912,7 @@
 <body>
 
 <div class="card">
-  <div class="title">KİŞİSEL YOL ASİSTANIM <span class="versiyon">V82</span></div>
+  <div class="title">KİŞİSEL YOL ASİSTANIM <span class="versiyon">V85</span></div>
 
   <div class="ust-arac-satiri">
     <button type="button" class="yazi-boyutu-btn" onclick="temaDegistir()" id="temaBtn">☀️ Açık Tema</button>
@@ -2219,10 +2240,8 @@
       <input type="date" id="inHesapTarih">
       <select id="inHesapKategori">
         <option value="yakit">⛽ Yakıt</option>
-        <option value="yemek">🍽️ Yemek</option>
         <option value="otopark">🅿️ Otopark</option>
         <option value="otoyol">🛣️ Köprü / Otoyol</option>
-        <option value="konaklama">🛏️ Konaklama</option>
         <option value="yolparasi">💶 Yol Parası (Şirketten)</option>
         <option value="diger">📦 Diğer</option>
       </select>
@@ -2288,6 +2307,36 @@
       </div>
     </details>
   </div>
+
+  <details class="katlanir-bolum">
+    <summary>🎁 Şirket Ekstra Takibi</summary>
+    <div class="katlanir-icerik">
+      <div class="yedek-not">Bu bölüm, normal harcırahından tamamen AYRI çalışır — hiçbir şekilde Toplam Masraf'a, Net Durum'a veya Resmi Rapor'daki SONUÇ hesabına dahil edilmez. Şirket sana sefer sırasında ek bir para gönderdiğinde buraya not al; o paradan ne kadar harcadığını da buraya işleyip kalan bakiyeyi takip edebilirsin.</div>
+
+      <div id="sirketEkstraOzet" class="sirket-ekstra-ozet"></div>
+
+      <div class="hesap-form-baslik" style="margin-top:14px;">➕ Şirket Ekstra Hareketi Ekle</div>
+      <div class="add-row">
+        <input type="date" id="inSeYon" style="display:none">
+        <select id="inSeTur">
+          <option value="alinan">📥 Şirket Gönderdi</option>
+          <option value="harcanan">📤 Bu Paradan Harcandı</option>
+        </select>
+        <select id="inSeParaBirimi">
+          <option value="TL">₺ TL</option>
+          <option value="EUR">€ EUR</option>
+          <option value="USD">$ USD</option>
+        </select>
+      </div>
+      <div class="add-row">
+        <input type="text" id="inSeAciklama" placeholder="Açıklama (örn. Lastik tamiri için gönderdi)">
+        <input type="number" step="0.01" id="inSeTutar" placeholder="Tutar">
+      </div>
+      <button class="add-btn" onclick="sirketEkstraEkle()">+ Ekle</button>
+
+      <div id="sirketEkstraListesi" style="margin-top:14px;"></div>
+    </div>
+  </details>
 
   <details class="katlanir-bolum" open>
     <summary>📋 Kayıtlar</summary>
@@ -2720,6 +2769,7 @@
         if(!kayitlar.kisiselHesapCizelgesi) kayitlar.kisiselHesapCizelgesi = [];
         if(!kayitlar.kisiselAciklamaDefteri) kayitlar.kisiselAciklamaDefteri = [];
         if(!kayitlar.resmiRapor) kayitlar.resmiRapor = {};
+        if(!kayitlar.sirketEkstra) kayitlar.sirketEkstra = [];
         if(kayitlar.aracPlaka) document.getElementById('aracPlaka').value = kayitlar.aracPlaka;
         if(kayitlar.dorsePlaka) document.getElementById('dorsePlaka').value = kayitlar.dorsePlaka;
         // Açılışta da HÇ TACHO ile paylaşılan alanı güncel tut (kullanıcı hiç dokunmasa bile)
@@ -3072,10 +3122,11 @@
     const adresDefteriYedek = kayitlar.adresDefteri || [];
     const aracProfilleriYedek = kayitlar.aracProfilleri || [];
     const hesapCizelgesiYedek = kayitlar.hesapCizelgesi || [];
+    const sirketEkstraYedek = kayitlar.sirketEkstra || [];
     const hesapAciklamaDefteriYedek = kayitlar.hesapAciklamaDefteri || [];
     const kisiselHesapCizelgesiYedek = kayitlar.kisiselHesapCizelgesi || [];
     const kisiselAciklamaDefteriYedek = kayitlar.kisiselAciklamaDefteri || [];
-    kayitlar = { yolgunlugu: [], baslangic: [], donus: [], cop: [], guzergahGidis: [], guzergahDonus: [], sirketTalimat: [], aracPlaka: "", dorsePlaka: "", seferArsivi: seferArsiviYedek, seferSayaci: seferSayaciYedek, adresDefteri: adresDefteriYedek, aracProfilleri: aracProfilleriYedek, hesapCizelgesi: hesapCizelgesiYedek, hesapAciklamaDefteri: hesapAciklamaDefteriYedek, kisiselHesapCizelgesi: kisiselHesapCizelgesiYedek, kisiselAciklamaDefteri: kisiselAciklamaDefteriYedek };
+    kayitlar = { yolgunlugu: [], baslangic: [], donus: [], cop: [], guzergahGidis: [], guzergahDonus: [], sirketTalimat: [], aracPlaka: "", dorsePlaka: "", seferArsivi: seferArsiviYedek, seferSayaci: seferSayaciYedek, adresDefteri: adresDefteriYedek, aracProfilleri: aracProfilleriYedek, hesapCizelgesi: hesapCizelgesiYedek, sirketEkstra: sirketEkstraYedek, hesapAciklamaDefteri: hesapAciklamaDefteriYedek, kisiselHesapCizelgesi: kisiselHesapCizelgesiYedek, kisiselAciklamaDefteri: kisiselAciklamaDefteriYedek };
     document.getElementById('aracPlaka').value = "";
     document.getElementById('dorsePlaka').value = "";
     document.getElementById('seferIstikamet').value = "";
@@ -4713,6 +4764,79 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
     etiket.classList.remove('secildi');
   }
 
+  // ---- ŞİRKET EKSTRA TAKİBİ — normal harcırahtan tamamen ayrı, bağımsız mini hesap ----
+  function sirketEkstraEkle(){
+    const tur = document.getElementById('inSeTur').value;
+    const paraBirimi = document.getElementById('inSeParaBirimi').value;
+    const aciklama = document.getElementById('inSeAciklama').value.trim();
+    const tutar = parseFloat(document.getElementById('inSeTutar').value);
+
+    if(!tutar || tutar <= 0){ alert('❌ Geçerli bir tutar gir.'); return; }
+    if(!aciklama){ alert('❌ Açıklama gir (örn. "Lastik tamiri için gönderdi").'); return; }
+
+    if(!kayitlar.sirketEkstra) kayitlar.sirketEkstra = [];
+    kayitlar.sirketEkstra.push({
+      id: Date.now(),
+      tarih: new Date().toISOString().slice(0,10),
+      tur, paraBirimi, aciklama, tutar
+    });
+    kaydet();
+
+    document.getElementById('inSeAciklama').value = '';
+    document.getElementById('inSeTutar').value = '';
+    cizSirketEkstra();
+  }
+
+  function sirketEkstraSil(id){
+    kayitlar.sirketEkstra = (kayitlar.sirketEkstra || []).filter(k => k.id !== id);
+    kaydet();
+    cizSirketEkstra();
+  }
+
+  function cizSirketEkstra(){
+    const ozetKutu = document.getElementById('sirketEkstraOzet');
+    const listeKutu = document.getElementById('sirketEkstraListesi');
+    if(!ozetKutu || !listeKutu) return;
+
+    const liste = kayitlar.sirketEkstra || [];
+
+    // Para birimi bazında Alınan / Harcanan / Kalan hesapla
+    const gruplar = {};
+    liste.forEach(k => {
+      const pb = k.paraBirimi || 'TL';
+      if(!gruplar[pb]) gruplar[pb] = {alinan:0, harcanan:0};
+      if(k.tur === 'alinan') gruplar[pb].alinan += Number(k.tutar) || 0;
+      else gruplar[pb].harcanan += Number(k.tutar) || 0;
+    });
+
+    const pbAnahtarlari = Object.keys(gruplar);
+    if(pbAnahtarlari.length === 0){
+      ozetKutu.innerHTML = `<div style="color:var(--muted);font-style:italic;">Henüz bir kayıt yok. Şirket ek para gönderdiğinde "📥 Şirket Gönderdi" ile başla.</div>`;
+    } else {
+      ozetKutu.innerHTML = pbAnahtarlari.map(pb => {
+        const g = gruplar[pb];
+        const kalan = g.alinan - g.harcanan;
+        return `<div><b>${fmtPara(g.alinan, pb)}</b> alındı · <b>${fmtPara(g.harcanan, pb)}</b> harcandı · Kalan: <b style="color:${kalan>=0?'var(--green)':'#ff5a5a'}">${fmtPara(kalan, pb)}</b></div>`;
+      }).join('');
+    }
+
+    if(liste.length === 0){
+      listeKutu.innerHTML = '';
+      return;
+    }
+    listeKutu.innerHTML = liste.slice().reverse().map(k => `
+      <div class="sirket-ekstra-kayit tur-${k.tur}">
+        <div>
+          <div>${k.tur === 'alinan' ? '📥' : '📤'} ${escapeHtml(k.aciklama)}</div>
+          <div style="color:var(--muted);font-size:.72rem;">${fmtTarih(k.tarih)}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <b style="color:${k.tur==='alinan'?'#a855f7':'#f59e0b'}">${k.tur==='alinan'?'+':'-'}${fmtPara(k.tutar, k.paraBirimi)}</b>
+          <span onclick="sirketEkstraSil(${k.id})" style="cursor:pointer;color:#ff5a5a;">🗑️</span>
+        </div>
+      </div>`).join('');
+  }
+
   function hesapEkle(){
     const tarih = document.getElementById('inHesapTarih').value;
     const kategori = document.getElementById('inHesapKategori').value;
@@ -4822,6 +4946,7 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
   }
 
   function cizHesap(){
+    cizSirketEkstra();
     const govde = document.getElementById('hesapListesi');
     const liste = kayitlar.hesapCizelgesi || [];
 
@@ -5210,11 +5335,33 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
       const eurMasrafToplam = (masrafGruplari['EUR'] || 0) + ekstraToplamEUR;
       const sonucTL = toplamYolAvansiTL - tlMasrafToplam;
       const sonucEUR = toplamYolAvansiEUR - eurMasrafToplam;
-      veri.push(["SONUÇ (TL):", fmtPara(sonucTL, 'TL') + (sonucTL >= 0 ? ' (Şoförden Alacaklı)' : ' (Şoföre Borçlu)')]);
+      veri.push(["SONUÇ (TL):", fmtPara(Math.abs(sonucTL), 'TL') + (sonucTL >= 0 ? ' — Kalan Harcırah (Şoförde Kalır, İade Gerekmez)' : ' — Şoföre Ek Ödeme Yapılacak (fazladan harcanan)')]);
       if(toplamYolAvansiEUR > 0 || eurMasrafToplam > 0){
-        veri.push(["SONUÇ (€):", fmtPara(sonucEUR, 'EUR') + (sonucEUR >= 0 ? ' (Şoförden Alacaklı)' : ' (Şoföre Borçlu)')]);
+        veri.push(["SONUÇ (€):", fmtPara(Math.abs(sonucEUR), 'EUR') + (sonucEUR >= 0 ? ' — Kalan Harcırah (Şoförde Kalır, İade Gerekmez)' : ' — Şoföre Ek Ödeme Yapılacak (fazladan harcanan)')]);
       }
       veri.push(["NOT: Bu sonuç, Hesap Çizelgesi'ndeki kayıtlı masraf ve yol parası verilerinden otomatik hesaplanmıştır. Diğer para birimlerinde (USD vb.) kayıt varsa ayrıca kontrol edin."]);
+
+      // ★ ŞİRKET EKSTRA TAKİBİ — sadece bilgi amaçlı, yukarıdaki SONUÇ hesabına dahil DEĞİLDİR
+      if((kayitlar.sirketEkstra || []).length > 0){
+        veri.push([]);
+        veri.push(["═══ ŞİRKET EKSTRA TAKİBİ (bilgi amaçlı — yukarıdaki SONUÇ hesabına dahil değildir) ═══"]);
+        veri.push(["Tarih", "Tür", "Açıklama", "Tutar", "Para Birimi"]);
+        kayitlar.sirketEkstra.forEach(k => {
+          veri.push([fmtTarih(k.tarih), k.tur === 'alinan' ? 'Şirket Gönderdi' : 'Bu Paradan Harcandı', k.aciklama, Number(k.tutar), k.paraBirimi]);
+        });
+        const seGruplari2 = {};
+        kayitlar.sirketEkstra.forEach(k => {
+          const pb = k.paraBirimi || 'TL';
+          if(!seGruplari2[pb]) seGruplari2[pb] = {alinan:0, harcanan:0};
+          if(k.tur === 'alinan') seGruplari2[pb].alinan += Number(k.tutar)||0;
+          else seGruplari2[pb].harcanan += Number(k.tutar)||0;
+        });
+        veri.push([]);
+        Object.keys(seGruplari2).forEach(pb => {
+          const g = seGruplari2[pb];
+          veri.push(["", "Şirket Ekstra Kalan ("+pb+"):", "", g.alinan - g.harcanan, pb]);
+        });
+      }
 
       const wb = XLSX.utils.book_new();
       const sayfa = XLSX.utils.aoa_to_sheet(veri);
@@ -5300,6 +5447,28 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
         tumParaBirimleri.forEach(pb => {
           const net = (yolParasiToplamlari[pb] || 0) - (paraToplamlari[pb] || 0);
           veri.push(["", "", "", "", "", "", "NET DURUM ("+pb+")", net, pb, ""]);
+        });
+      }
+
+      // ★ ŞİRKET EKSTRA TAKİBİ — sadece bilgi amaçlı, yukarıdaki hiçbir toplama dahil DEĞİLDİR
+      if((kayitlar.sirketEkstra || []).length > 0){
+        veri.push([]);
+        veri.push(["═══ ŞİRKET EKSTRA TAKİBİ (bilgi amaçlı — yukarıdaki toplamlara dahil değildir) ═══"]);
+        veri.push(["Tarih", "Tür", "Açıklama", "Tutar", "Para Birimi"]);
+        kayitlar.sirketEkstra.forEach(k => {
+          veri.push([fmtTarih(k.tarih), k.tur === 'alinan' ? 'Şirket Gönderdi' : 'Bu Paradan Harcandı', k.aciklama, Number(k.tutar), k.paraBirimi]);
+        });
+        const seGruplari = {};
+        kayitlar.sirketEkstra.forEach(k => {
+          const pb = k.paraBirimi || 'TL';
+          if(!seGruplari[pb]) seGruplari[pb] = {alinan:0, harcanan:0};
+          if(k.tur === 'alinan') seGruplari[pb].alinan += Number(k.tutar)||0;
+          else seGruplari[pb].harcanan += Number(k.tutar)||0;
+        });
+        veri.push([]);
+        Object.keys(seGruplari).forEach(pb => {
+          const g = seGruplari[pb];
+          veri.push(["", "", "Şirket Ekstra Kalan ("+pb+"):", g.alinan - g.harcanan, pb]);
         });
       }
 
