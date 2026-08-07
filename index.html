@@ -1874,7 +1874,7 @@
 <body>
 
 <div class="card">
-  <div class="title">KİŞİSEL YOL ASİSTANIM <span class="versiyon">V80</span></div>
+  <div class="title">KİŞİSEL YOL ASİSTANIM <span class="versiyon">V81</span></div>
 
   <div class="ust-arac-satiri">
     <button type="button" class="yazi-boyutu-btn" onclick="temaDegistir()" id="temaBtn">☀️ Açık Tema</button>
@@ -5122,25 +5122,33 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
       veri.push([]);
 
       // SONUÇ
-      const ekstraToplam = (parseFloat(al('rpDozvalaTutar'))||0) + (parseFloat(al('rpParsiyelTutar'))||0) + (parseFloat(al('rpYatmaGunTutar'))||0);
+      // ★ DÜZELTME: Dozvala, Parsiyel, Yatma Günü — Türkiye dışında oluşan masraflar, TL değil
+      // EUR olarak hesaplanmalı. Parsiyel ayrıca "adet × birim fiyat" çarpımıyla hesaplanmalı
+      // (önceden sadece birim fiyat kullanılıyordu, adet çarpılmıyordu).
+      const dozvalaTutar = parseFloat(al('rpDozvalaTutar')) || 0;
+      const parsiyelSayisi = parseFloat(al('rpParsiyelSayisi')) || 0;
+      const parsiyelBirimFiyat = parseFloat(al('rpParsiyelTutar')) || 0;
+      const parsiyelToplam = parsiyelSayisi > 0 ? (parsiyelSayisi * parsiyelBirimFiyat) : parsiyelBirimFiyat;
+      const yatmaGunuTutar = parseFloat(al('rpYatmaGunTutar')) || 0;
+      const ekstraToplamEUR = dozvalaTutar + parsiyelToplam + yatmaGunuTutar;
       const harcilik = parseFloat(al('rpHarcilik')) || 0;
       const masrafToplamMetni = mtToplam(tumMasraflar);
       veri.push(["MASRAF TOPL.:", masrafToplamMetni]);
-      veri.push(["HARÇILIK:", fmtPara(harcilik, 'TL')]);
-      veri.push(["EKSTRALAR TOPLAMI:", fmtPara(ekstraToplam, 'TL')]);
+      veri.push(["HARÇILIK (TL):", fmtPara(harcilik, 'TL')]);
+      veri.push(["PARSİYEL TOPLAMI (€):", parsiyelSayisi > 0 ? `${parsiyelSayisi} adet × ${fmtPara(parsiyelBirimFiyat,'EUR')} = ${fmtPara(parsiyelToplam,'EUR')}` : fmtPara(parsiyelToplam, 'EUR')]);
+      veri.push(["EKSTRALAR TOPLAMI (€):", fmtPara(ekstraToplamEUR, 'EUR')]);
       veri.push(["ÇIKIŞ AVANSI (TL):", fmtPara(toplamYolAvansiTL, 'TL')]);
       veri.push(["ÇIKIŞ AVANSI (€):", fmtPara(toplamYolAvansiEUR, 'EUR')]);
       veri.push([]);
 
-      // SONUÇ (BORÇ/ALACAK) — artık gerçek verilerle, para birimi bazında hesaplanıyor
-      // (Harçılık ve Ekstralar TL kabul edilip TL masrafa ekleniyor; EUR masraflar ayrı kalıyor)
+      // SONUÇ (BORÇ/ALACAK) — Harçlık TL masrafa, Ekstralar (Dozvala/Parsiyel/Yatma Günü) EUR masrafa eklenir
       const masrafGruplari = {};
       tumMasraflar.forEach(k => {
         const pb = k.paraBirimi || 'TL';
         masrafGruplari[pb] = (masrafGruplari[pb] || 0) + (Number(k.tutar) || 0);
       });
-      const tlMasrafToplam = (masrafGruplari['TL'] || 0) + harcilik + ekstraToplam;
-      const eurMasrafToplam = masrafGruplari['EUR'] || 0;
+      const tlMasrafToplam = (masrafGruplari['TL'] || 0) + harcilik;
+      const eurMasrafToplam = (masrafGruplari['EUR'] || 0) + ekstraToplamEUR;
       const sonucTL = toplamYolAvansiTL - tlMasrafToplam;
       const sonucEUR = toplamYolAvansiEUR - eurMasrafToplam;
       veri.push(["SONUÇ (TL):", fmtPara(sonucTL, 'TL') + (sonucTL >= 0 ? ' (Şoförden Alacaklı)' : ' (Şoföre Borçlu)')]);
