@@ -481,6 +481,40 @@
     font-size:.82rem;
   }
   .toplam-sifirla-btn:hover{background:#ff5a5a;color:#fff;}
+  .toplam-sifirla-alt{
+    text-align:center;
+    margin:6px 0 32px;
+    opacity:.55;
+  }
+  .toplam-sifirla-btn-kucuk{
+    padding:6px 12px;
+    font-size:.68rem;
+    border-color:#5a3a3a;
+    color:#a06060;
+  }
+  .toplam-sifirla-btn-kucuk:hover{background:#ff5a5a;color:#fff;opacity:1;}
+
+  .kaydet-yeni-sefer-alani{
+    text-align:center;
+    margin:36px 0 4px;
+  }
+  .kaydet-yeni-sefer-btn{
+    background:var(--green);
+    border:none;
+    color:#08210f;
+    border-radius:10px;
+    padding:14px 22px;
+    font-weight:800;
+    font-size:.88rem;
+    cursor:pointer;
+    width:100%;
+  }
+  .kaydet-yeni-sefer-btn:active{opacity:.85;}
+  .kaydet-yeni-sefer-not{
+    color:var(--muted);
+    font-size:.7rem;
+    margin-top:6px;
+  }
   .onay-metni{
     display:block;
     color:var(--muted);
@@ -550,6 +584,16 @@
   .pdf-kaydet-satiri{
     margin:20px 0 8px;
     text-align:center;
+  }
+  .sefer-secici{
+    width:100%;
+    background:var(--input-bg);
+    border:1px solid var(--panel-border);
+    color:var(--text);
+    border-radius:8px;
+    padding:10px 12px;
+    font-size:.85rem;
+    margin-bottom:8px;
   }
   .pdf-kaydet-btn{
     width:100%;
@@ -1912,7 +1956,7 @@
 <body>
 
 <div class="card">
-  <div class="title">KİŞİSEL YOL ASİSTANIM <span class="versiyon">V87</span></div>
+  <div class="title">KİŞİSEL YOL ASİSTANIM <span class="versiyon">V88</span></div>
 
   <div class="ust-arac-satiri">
     <button type="button" class="yazi-boyutu-btn" onclick="temaDegistir()" id="temaBtn">☀️ Açık Tema</button>
@@ -2017,10 +2061,6 @@
     </div>
   </div>
 
-  <div class="toplam-sifirla-satiri" id="toplamSifirlaAlani" style="display:none;">
-    <button onclick="sifirlaOnayGoster()" class="toplam-sifirla-btn">🔄 Tümünü Sıfırla</button>
-  </div>
-
   <!-- YOL GÜNLÜĞÜM -->
   <h2 class="section">YOL GÜNLÜĞÜM</h2>
   <table>
@@ -2120,6 +2160,7 @@
   <div id="hizliSecimD" class="hizli-secim-satiri"></div>
 
   <div class="pdf-kaydet-satiri">
+    <select id="mazotExcelSeferSecim" class="sefer-secici" onfocus="seferSeciciDoldur('mazotExcelSeferSecim')"></select>
     <button type="button" class="pdf-kaydet-btn" onclick="excelKaydet()">📊 Excel Olarak Kaydet</button>
     <div id="pdfDurum" class="foto-oku-durum"></div>
   </div>
@@ -2189,6 +2230,17 @@
         </tbody>
       </table>
     </div>
+  </div>
+
+  <!-- Kaydet ve Yeni Sefere Başla — Mazot Takibi + Hesap Çizelgesi Excel'lerini indirir,
+       ardından onay alıp yeni sefere geçer. Bilerek sayfanın en altında, dikkat çekmeyecek şekilde. -->
+  <div class="kaydet-yeni-sefer-alani">
+    <button onclick="kaydetVeYeniSefereBasla()" class="kaydet-yeni-sefer-btn">💾 Kaydet ve Yeni Sefere Başla</button>
+    <div class="kaydet-yeni-sefer-not">Mazot Takibi + Hesap Çizelgesi Excel olarak iner, sonra onaylarsan yeni sefer başlar.</div>
+  </div>
+
+  <div class="toplam-sifirla-satiri toplam-sifirla-alt" id="toplamSifirlaAlani">
+    <button onclick="sifirlaOnayGoster()" class="toplam-sifirla-btn toplam-sifirla-btn-kucuk">🔄 Sadece Sıfırla (kaydetmeden)</button>
   </div>
 
   </div><!-- /anaSayfa -->
@@ -2349,6 +2401,7 @@
     <summary>📤 Dışa Aktar (Excel / Fiş ZIP)</summary>
     <div class="katlanir-icerik">
       <div class="pdf-kaydet-satiri">
+        <select id="hesapExcelSeferSecim" class="sefer-secici" onfocus="seferSeciciDoldur('hesapExcelSeferSecim')"></select>
         <button type="button" class="pdf-kaydet-btn" onclick="hesapExcelKaydet()">📊 Hesap Çizelgesini Excel Olarak Kaydet</button>
         <div id="hesapExcelDurum" class="foto-oku-durum"></div>
       </div>
@@ -3083,6 +3136,29 @@
     kayitlar.cop.splice(copIndex, 1);
     cizCop();
     kaydet();
+  }
+
+  // Tek buton: Mazot Takibi + Hesap Çizelgesi Excel'lerini indirir, sonra onay alıp yeni sefere geçer.
+  function kaydetVeYeniSefereBasla(){
+    if(!confirm('📊 Mazot Takibi ve Hesap Çizelgesi Excel dosyaları indirilecek.\n\nİndirme bitince, onaylarsan YENİ SEFER başlatılacak ve güncel sefer ekranları sıfırlanacak (geçmiş veriler kaybolmaz, Geçmiş Seferler\'e arşivlenir).\n\nDevam edilsin mi?')){
+      return;
+    }
+
+    // Bu butondan indirirken her zaman GÜNCEL seferi kaydet (seçim kutuları hiç açılmamış olsa bile boş kalmasın)
+    seferSeciciDoldur('mazotExcelSeferSecim');
+    seferSeciciDoldur('hesapExcelSeferSecim');
+
+    try{ excelKaydet(); }catch(e){ console.error('Mazot Takibi Excel hatası:', e); }
+
+    setTimeout(() => {
+      try{ hesapExcelKaydet(); }catch(e){ console.error('Hesap Çizelgesi Excel hatası:', e); }
+
+      setTimeout(() => {
+        if(confirm('✓ İki Excel dosyası da indirildi (telefonun İndirilenler klasörüne).\n\nŞimdi YENİ SEFERE başlanılsın mı? (Güncel sefer verileri sıfırlanacak, geçmiş korunacak.)')){
+          tumunuSifirla();
+        }
+      }, 600);
+    }, 600);
   }
 
   function sifirlaOnayGoster(){
@@ -4061,6 +4137,29 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
     return satirlar;
   }
 
+  // Tüm var olan sefer numaralarını (arşivlenmiş + güncel) küçükten büyüğe döndürür
+  function tumSeferNumaralariniGetir(){
+    const mevcutSeferNo = (kayitlar.seferSayaci || 0) + 1;
+    const arsivNolari = (kayitlar.seferArsivi || []).map(s => s.seferNo);
+    const hepsi = [...new Set([...arsivNolari, mevcutSeferNo])].sort((a, b) => a - b);
+    return { hepsi, mevcutSeferNo };
+  }
+
+  // İndirme öncesi "Hangi sefer?" seçim kutusunu doldurur — güncel sefer varsayılan seçili gelir
+  function seferSeciciDoldur(selectId){
+    const secim = document.getElementById(selectId);
+    if(!secim) return;
+    const { hepsi, mevcutSeferNo } = tumSeferNumaralariniGetir();
+
+    let html = `<option value="tumu">🗂️ Tüm Seferler (Tek Dosyada)</option>`;
+    hepsi.forEach(no => {
+      const etiket = no === mevcutSeferNo ? `Sefer ${no} (Güncel)` : `Sefer ${no}`;
+      html += `<option value="${no}">${etiket}</option>`;
+    });
+    secim.innerHTML = html;
+    secim.value = String(mevcutSeferNo); // varsayılan: güncel sefer seçili gelsin
+  }
+
   function excelKaydet(){
     const durum = document.getElementById('pdfDurum');
     durum.textContent = "";
@@ -4075,10 +4174,21 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
 
       // Arşivlenmiş seferler + mevcut (henüz sıfırlanmamış) sefer, Sefer No ile birleştirilir
       const mevcutSeferNo = (kayitlar.seferSayaci || 0) + 1;
-      const tumSeferler = [
+      let tumSeferler = [
         ...(kayitlar.seferArsivi || []),
         { seferNo: mevcutSeferNo, aracPlaka: kayitlar.aracPlaka, dorsePlaka: kayitlar.dorsePlaka, yolgunlugu: kayitlar.yolgunlugu, baslangic: kayitlar.baslangic, donus: kayitlar.donus }
       ];
+
+      // Kullanıcının seçtiği sefere göre filtrele ("tumu" ise hepsi tek dosyada kalır)
+      const seciliSefer = document.getElementById('mazotExcelSeferSecim') ? document.getElementById('mazotExcelSeferSecim').value : 'tumu';
+      if(seciliSefer !== 'tumu'){
+        tumSeferler = tumSeferler.filter(s => String(s.seferNo) === String(seciliSefer));
+      }
+      if(tumSeferler.length === 0){
+        durum.textContent = '✗ Seçilen sefere ait veri bulunamadı.';
+        durum.className = 'foto-oku-durum hata';
+        return;
+      }
 
       // Bir sefer nesnesinden özet rakamları hesaplayan yardımcı fonksiyon
       const veri = [["MAZOT TAKİBİ"], []];
@@ -5456,20 +5566,23 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
     try{
       if(typeof XLSX === 'undefined') throw new Error('Kütüphane yüklenemedi');
 
-      const mevcutSeferNoExcel = (kayitlar.seferSayaci || 0) + 1;
-      const liste = (kayitlar.hesapCizelgesi || []).filter(k => k.seferNo === mevcutSeferNoExcel);
+      const seciliSeferHesap = document.getElementById('hesapExcelSeferSecim') ? document.getElementById('hesapExcelSeferSecim').value : 'tumu';
+      const liste = seciliSeferHesap === 'tumu'
+        ? (kayitlar.hesapCizelgesi || [])
+        : (kayitlar.hesapCizelgesi || []).filter(k => String(k.seferNo) === String(seciliSeferHesap));
       if(liste.length === 0){
-        durum.textContent = '✗ Henüz kayıt yok.';
+        durum.textContent = '✗ Seçilen sefere ait kayıt yok.';
         durum.className = 'foto-oku-durum hata';
         return;
       }
 
       const wb = XLSX.utils.book_new();
       const veri = [["ŞİRKET HESAP ÇİZELGESİ"], []];
-      veri.push(["Tarih", "Kategori", "Ödeme Şekli", "Ülke", "Araç Plaka", "Dorse Plaka", "Açıklama", "Tutar", "Para Birimi", "Fiş"]);
+      veri.push(["Sefer No", "Tarih", "Kategori", "Ödeme Şekli", "Ülke", "Araç Plaka", "Dorse Plaka", "Açıklama", "Tutar", "Para Birimi", "Fiş"]);
 
-      // Tarihe göre kronolojik sırala (tarihi olmayanlar en sona)
+      // Önce Sefer No'ya, sonra tarihe göre kronolojik sırala (tarihi olmayanlar en sona)
       const sirali = [...liste].sort((a, b) => {
+        if((a.seferNo || 0) !== (b.seferNo || 0)) return (a.seferNo || 0) - (b.seferNo || 0);
         const ta = a.tarih || '';
         const tb = b.tarih || '';
         if(!ta && !tb) return 0;
@@ -5490,6 +5603,7 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
         }
         paraToplamlari[pb] = (paraToplamlari[pb] || 0) + (Number(k.tutar) || 0);
         veri.push([
+          k.seferNo || '-',
           fmtTarih(k.tarih),
           hesapKategoriAdlari[k.kategori] || k.kategori,
           hesapOdemeAdlari[k.odemeSekli] || k.odemeSekli || '-',
@@ -5505,18 +5619,18 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
 
       veri.push([]);
       Object.keys(paraToplamlari).forEach(pb => {
-        veri.push(["", "", "", "", "", "", "TOPLAM MASRAF ("+pb+")", paraToplamlari[pb], pb, ""]);
+        veri.push(["", "", "", "", "", "", "", "TOPLAM MASRAF ("+pb+")", paraToplamlari[pb], pb, ""]);
       });
       if(Object.keys(yolParasiToplamlari).length > 0){
         veri.push([]);
         Object.keys(yolParasiToplamlari).forEach(pb => {
-          veri.push(["", "", "", "", "", "", "ALINAN YOL PARASI ("+pb+")", yolParasiToplamlari[pb], pb, ""]);
+          veri.push(["", "", "", "", "", "", "", "ALINAN YOL PARASI ("+pb+")", yolParasiToplamlari[pb], pb, ""]);
         });
         veri.push([]);
         const tumParaBirimleri = new Set([...Object.keys(paraToplamlari), ...Object.keys(yolParasiToplamlari)]);
         tumParaBirimleri.forEach(pb => {
           const net = (yolParasiToplamlari[pb] || 0) - (paraToplamlari[pb] || 0);
-          veri.push(["", "", "", "", "", "", "NET DURUM ("+pb+")", net, pb, ""]);
+          veri.push(["", "", "", "", "", "", "", "NET DURUM ("+pb+")", net, pb, ""]);
         });
       }
 
@@ -5543,7 +5657,7 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
       }
 
       const sayfa = XLSX.utils.aoa_to_sheet(veri);
-      sayfa['!cols'] = [{wch:12},{wch:14},{wch:12},{wch:14},{wch:12},{wch:12},{wch:28},{wch:12},{wch:10},{wch:8}];
+      sayfa['!cols'] = [{wch:10},{wch:12},{wch:14},{wch:12},{wch:14},{wch:12},{wch:12},{wch:28},{wch:12},{wch:10},{wch:8}];
       XLSX.utils.book_append_sheet(wb, sayfa, "Hesap Çizelgesi");
 
       const bugun = new Date();
@@ -6395,6 +6509,8 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
   }
 
   yukle();
+  seferSeciciDoldur('mazotExcelSeferSecim');
+  seferSeciciDoldur('hesapExcelSeferSecim');
 
   // Servis çalışanını kaydet (sadece gerçek bir web adresinde çalışır; indirilen dosyada
   // content:// protokolünde çalışmaz — hata verirse sessizce geç, uygulama normal çalışmaya devam eder).
