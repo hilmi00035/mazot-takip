@@ -1912,7 +1912,7 @@
 <body>
 
 <div class="card">
-  <div class="title">KİŞİSEL YOL ASİSTANIM <span class="versiyon">V85</span></div>
+  <div class="title">KİŞİSEL YOL ASİSTANIM <span class="versiyon">V86</span></div>
 
   <div class="ust-arac-satiri">
     <button type="button" class="yazi-boyutu-btn" onclick="temaDegistir()" id="temaBtn">☀️ Açık Tema</button>
@@ -2017,7 +2017,7 @@
     </div>
   </div>
 
-  <div class="toplam-sifirla-satiri" id="toplamSifirlaAlani">
+  <div class="toplam-sifirla-satiri" id="toplamSifirlaAlani" style="display:none;">
     <button onclick="sifirlaOnayGoster()" class="toplam-sifirla-btn">🔄 Tümünü Sıfırla</button>
   </div>
 
@@ -4948,7 +4948,10 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
   function cizHesap(){
     cizSirketEkstra();
     const govde = document.getElementById('hesapListesi');
-    const liste = kayitlar.hesapCizelgesi || [];
+    // Sadece GÜNCEL sefere ait kayıtları göster — önceki sefer/dorse "kapanmış" sayılır,
+    // eski kayıtlara Geçmiş Seferler'den ulaşılır.
+    const mevcutSeferNo = (kayitlar.seferSayaci || 0) + 1;
+    const liste = (kayitlar.hesapCizelgesi || []).filter(k => k.seferNo === mevcutSeferNo);
 
     // Tarihe göre kronolojik sırala (en eski üstte); tarihi olmayanlar en sona düşer.
     // Orijinal dizideki index'i koruyoruz ki Düzenle/Sil doğru kaydı bulsun.
@@ -5071,7 +5074,8 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
     try{
       if(typeof JSZip === 'undefined') throw new Error('Kütüphane yüklenemedi');
 
-      const liste = (kayitlar.hesapCizelgesi || []).filter(k => k.fisFoto);
+      const mevcutSeferNoZip = (kayitlar.seferSayaci || 0) + 1;
+      const liste = (kayitlar.hesapCizelgesi || []).filter(k => k.fisFoto && k.seferNo === mevcutSeferNoZip);
       if(liste.length === 0){
         durum.textContent = '✗ Fotoğraflı bir fiş bulunamadı.';
         durum.className = 'foto-oku-durum hata';
@@ -5136,11 +5140,12 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
     const aracPlakaDeger = document.getElementById('aracPlaka').value || '';
     const dorsePlakaDeger = document.getElementById('dorsePlaka').value || '';
 
-    const yolParasiKayitlari = (kayitlar.hesapCizelgesi || []).filter(k => k.kategori === 'yolparasi');
+    const mevcutSeferNoOnizleme = (kayitlar.seferSayaci || 0) + 1;
+    const yolParasiKayitlari = (kayitlar.hesapCizelgesi || []).filter(k => k.kategori === 'yolparasi' && k.seferNo === mevcutSeferNoOnizleme);
     const yolParasiTLToplam = yolParasiKayitlari.filter(k => (k.paraBirimi||'TL') === 'TL').reduce((a,k) => a + (Number(k.tutar)||0), 0);
     const yolParasiEURToplam = yolParasiKayitlari.filter(k => k.paraBirimi === 'EUR').reduce((a,k) => a + (Number(k.tutar)||0), 0);
 
-    const masraflar = (kayitlar.hesapCizelgesi || []).filter(k => k.kategori !== 'yolparasi');
+    const masraflar = (kayitlar.hesapCizelgesi || []).filter(k => k.kategori !== 'yolparasi' && k.seferNo === mevcutSeferNoOnizleme);
     const masrafGruplari = {};
     masraflar.forEach(k => { const pb = k.paraBirimi || 'TL'; masrafGruplari[pb] = (masrafGruplari[pb]||0) + (Number(k.tutar)||0); });
     const masrafMetni = Object.keys(masrafGruplari).length === 0 ? 'kayıt yok' :
@@ -5212,8 +5217,9 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
 
       // Yol Avansı: elle yazılan ayrı bir kutu yerine, "💶 Yol Parası Ekle" ile girdiğin
       // GERÇEK kayıtların toplamını kullanıyoruz — Hesap Çizelgesi'ndeki "Şirketten Alınan
-      // Yol Parası" ile burası artık birebir aynı sayıyı gösterecek.
-      const yolParasiKayitlari = (kayitlar.hesapCizelgesi || []).filter(k => k.kategori === 'yolparasi');
+      // Yol Parası" ile burası artık birebir aynı sayıyı gösterecek. Sadece GÜNCEL sefere ait.
+      const mevcutSeferNoRapor = (kayitlar.seferSayaci || 0) + 1;
+      const yolParasiKayitlari = (kayitlar.hesapCizelgesi || []).filter(k => k.kategori === 'yolparasi' && k.seferNo === mevcutSeferNoRapor);
       const yolParasiTLToplam = yolParasiKayitlari.filter(k => (k.paraBirimi||'TL') === 'TL').reduce((a,k) => a + (Number(k.tutar)||0), 0);
       const yolParasiEURToplam = yolParasiKayitlari.filter(k => k.paraBirimi === 'EUR').reduce((a,k) => a + (Number(k.tutar)||0), 0);
       // Elle bir şey yazılmışsa (opsiyonel, ekstra/farklı bir avans notu için) onu da üstüne ekle
@@ -5241,7 +5247,7 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
       veri.push([]);
 
       // YURTİÇİ HARCAMALARI (Nakit) vs RMC/KREDİ KARTI HARCAMALARI (Kart + Açık Hesap)
-      const tumMasraflar = (kayitlar.hesapCizelgesi || []).filter(k => k.kategori !== 'yolparasi');
+      const tumMasraflar = (kayitlar.hesapCizelgesi || []).filter(k => k.kategori !== 'yolparasi' && k.seferNo === mevcutSeferNoRapor);
       const nakitListe = tumMasraflar.filter(k => (k.odemeSekli || 'nakit') === 'nakit');
       const kartListe = tumMasraflar.filter(k => (k.odemeSekli || 'nakit') !== 'nakit');
 
@@ -5389,7 +5395,8 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
     try{
       if(typeof XLSX === 'undefined') throw new Error('Kütüphane yüklenemedi');
 
-      const liste = kayitlar.hesapCizelgesi || [];
+      const mevcutSeferNoExcel = (kayitlar.seferSayaci || 0) + 1;
+      const liste = (kayitlar.hesapCizelgesi || []).filter(k => k.seferNo === mevcutSeferNoExcel);
       if(liste.length === 0){
         durum.textContent = '✗ Henüz kayıt yok.';
         durum.className = 'foto-oku-durum hata';
