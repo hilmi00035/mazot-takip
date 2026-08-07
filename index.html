@@ -1912,7 +1912,7 @@
 <body>
 
 <div class="card">
-  <div class="title">KİŞİSEL YOL ASİSTANIM <span class="versiyon">V86</span></div>
+  <div class="title">KİŞİSEL YOL ASİSTANIM <span class="versiyon">V87</span></div>
 
   <div class="ust-arac-satiri">
     <button type="button" class="yazi-boyutu-btn" onclick="temaDegistir()" id="temaBtn">☀️ Açık Tema</button>
@@ -4004,6 +4004,63 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
     });
   }
 
+  // Belirli bir sefere ait Hesap Çizelgesi masraflarını, Excel satırı formatında üretir.
+  // Mazot Takibi Excel'inde her seferin sonuna eklenir — böylece o sefer/dosya tamamlandığında
+  // km/mazot bilgisiyle birlikte masraflar da tek dosyada, kapanmış halde görünür.
+  function seferHesapDetayVeriUret(seferNo){
+    const tumKayitlar = kayitlar.hesapCizelgesi || [];
+    const seferMasraflari = tumKayitlar.filter(k => k.seferNo === seferNo && k.kategori !== 'yolparasi');
+    const seferYolParasi = tumKayitlar.filter(k => k.seferNo === seferNo && k.kategori === 'yolparasi');
+
+    if(seferMasraflari.length === 0 && seferYolParasi.length === 0) return [];
+
+    const satirlar = [];
+    satirlar.push([]);
+    satirlar.push(["HESAP ÇİZELGESİ (Sefer " + seferNo + ")"]);
+    satirlar.push(["Tarih", "Kategori", "Ödeme Şekli", "Ülke", "Açıklama", "Tutar", "Para Birimi", "Fiş"]);
+
+    const masrafGruplari = {};
+    seferMasraflari.forEach(k => {
+      const pb = k.paraBirimi || 'TL';
+      masrafGruplari[pb] = (masrafGruplari[pb] || 0) + (Number(k.tutar) || 0);
+      satirlar.push([
+        fmtTarih(k.tarih),
+        hesapKategoriAdlari[k.kategori] || k.kategori,
+        hesapOdemeAdlari[k.odemeSekli] || k.odemeSekli || '-',
+        k.ulke ? (ulkeBilgisi[k.ulke] ? ulkeBilgisi[k.ulke].isim : k.ulke) : '-',
+        k.aciklama,
+        Number(k.tutar),
+        pb,
+        k.fisFoto ? 'Var' : 'Yok'
+      ]);
+    });
+
+    satirlar.push([]);
+    Object.keys(masrafGruplari).forEach(pb => {
+      satirlar.push(["", "", "", "", "TOPLAM MASRAF ("+pb+")", masrafGruplari[pb], pb, ""]);
+    });
+
+    const yolParasiGruplari = {};
+    seferYolParasi.forEach(k => {
+      const pb = k.paraBirimi || 'TL';
+      yolParasiGruplari[pb] = (yolParasiGruplari[pb] || 0) + (Number(k.tutar) || 0);
+    });
+    if(Object.keys(yolParasiGruplari).length > 0){
+      satirlar.push([]);
+      Object.keys(yolParasiGruplari).forEach(pb => {
+        satirlar.push(["", "", "", "", "ALINAN YOL PARASI ("+pb+")", yolParasiGruplari[pb], pb, ""]);
+      });
+      satirlar.push([]);
+      const tumParaBirimleri = new Set([...Object.keys(masrafGruplari), ...Object.keys(yolParasiGruplari)]);
+      tumParaBirimleri.forEach(pb => {
+        const net = (yolParasiGruplari[pb] || 0) - (masrafGruplari[pb] || 0);
+        satirlar.push(["", "", "", "", "NET DURUM ("+pb+")", net, pb, ""]);
+      });
+    }
+
+    return satirlar;
+  }
+
   function excelKaydet(){
     const durum = document.getElementById('pdfDurum');
     durum.textContent = "";
@@ -4061,6 +4118,10 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
         s.donus.forEach(k => {
           veri.push(["", fmtTarih(k.tarih), k.sehir, Number(k.km), k.mazot ? Number(k.mazot) : "", k.adblue ? Number(k.adblue) : ""]);
         });
+
+        // Bu sefere ait Hesap Çizelgesi masrafları — sefer/dosya tamamlandığında km/mazot
+        // bilgisiyle birlikte tek dosyada, kapanmış halde görünsün diye buraya da ekleniyor.
+        seferHesapDetayVeriUret(s.seferNo).forEach(satir => veri.push(satir));
       });
 
       const sayfa = XLSX.utils.aoa_to_sheet(veri);
@@ -5422,10 +5483,12 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
       sirali.forEach(k => {
         const pb = k.paraBirimi || 'TL';
         if(k.kategori === 'yolparasi'){
+          // Yol Parası kayıtları ana tabloda AYRI SATIR olarak listelenmiyor — sadece toplamı
+          // aşağıdaki "ALINAN YOL PARASI" satırında gösteriliyor (tekrar/karışıklık olmasın diye).
           yolParasiToplamlari[pb] = (yolParasiToplamlari[pb] || 0) + (Number(k.tutar) || 0);
-        } else {
-          paraToplamlari[pb] = (paraToplamlari[pb] || 0) + (Number(k.tutar) || 0);
+          return;
         }
+        paraToplamlari[pb] = (paraToplamlari[pb] || 0) + (Number(k.tutar) || 0);
         veri.push([
           fmtTarih(k.tarih),
           hesapKategoriAdlari[k.kategori] || k.kategori,
