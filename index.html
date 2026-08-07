@@ -789,6 +789,23 @@
     padding:14px;
     margin-bottom:20px;
   }
+  .resmi-rapor-onizleme{
+    background:rgba(34,197,94,.06);
+    border:1px solid rgba(34,197,94,.25);
+    border-radius:8px;
+    padding:12px;
+    margin-bottom:16px;
+    font-size:.78rem;
+    line-height:1.7;
+  }
+  .resmi-rapor-onizleme-baslik{
+    font-weight:700;
+    color:var(--green);
+    margin-bottom:6px;
+    font-size:.76rem;
+  }
+  .resmi-rapor-onizleme-satir b{color:var(--text);}
+  .resmi-rapor-onizleme-bos{color:var(--muted); font-style:italic;}
   .resmi-rapor-alt-baslik{
     font-size:.76rem;
     font-weight:700;
@@ -1874,7 +1891,7 @@
 <body>
 
 <div class="card">
-  <div class="title">KİŞİSEL YOL ASİSTANIM <span class="versiyon">V81</span></div>
+  <div class="title">KİŞİSEL YOL ASİSTANIM <span class="versiyon">V82</span></div>
 
   <div class="ust-arac-satiri">
     <button type="button" class="yazi-boyutu-btn" onclick="temaDegistir()" id="temaBtn">☀️ Açık Tema</button>
@@ -2293,11 +2310,13 @@
     </div>
   </details>
 
-  <details class="katlanir-bolum">
+  <details class="katlanir-bolum" ontoggle="if(this.open) resmiRaporOnizlemeGuncelle()">
     <summary>📋 Şirket Resmi Raporu — Ek Bilgiler</summary>
     <div class="katlanir-icerik">
       <div class="resmi-rapor-kutusu">
         <div class="yedek-not">Yol Günlüğü, Mazot Alınan, Dönüş Seferi ve Hesap Çizelgesi verilerin otomatik kullanılacak. Aşağıdakiler uygulamada başka yerde tutulmadığı için elle girilmesi gerekiyor.</div>
+
+        <div id="resmiRaporOnizleme" class="resmi-rapor-onizleme"></div>
 
         <div class="add-row">
           <input type="text" id="rpAdSoyad" placeholder="Adı Soyadı" oninput="resmiRaporKaydet()">
@@ -4980,6 +4999,46 @@ Belgedeki TÜM teslim adreslerini (1, 2, 3... diye numaralanmış hepsini) eksik
       buton.textContent = '📦 Fişleri ZIP Olarak İndir (Ülke / Plaka Klasörlü)';
       buton.disabled = false;
     }
+  }
+
+  // Excel'i açmadan, otomatik çekilecek verileri uygulama içinde önizleyebilmek için
+  function resmiRaporOnizlemeGuncelle(){
+    const kutu = document.getElementById('resmiRaporOnizleme');
+    if(!kutu) return;
+
+    const cikisKayit = kayitlar.yolgunlugu.length > 0 ? kayitlar.yolgunlugu[kayitlar.yolgunlugu.length - 1] : null;
+    const donusKayit = kayitlar.donus.length > 0 ? kayitlar.donus[0] : null;
+    const aracPlakaDeger = document.getElementById('aracPlaka').value || '';
+    const dorsePlakaDeger = document.getElementById('dorsePlaka').value || '';
+
+    const yolParasiKayitlari = (kayitlar.hesapCizelgesi || []).filter(k => k.kategori === 'yolparasi');
+    const yolParasiTLToplam = yolParasiKayitlari.filter(k => (k.paraBirimi||'TL') === 'TL').reduce((a,k) => a + (Number(k.tutar)||0), 0);
+    const yolParasiEURToplam = yolParasiKayitlari.filter(k => k.paraBirimi === 'EUR').reduce((a,k) => a + (Number(k.tutar)||0), 0);
+
+    const masraflar = (kayitlar.hesapCizelgesi || []).filter(k => k.kategori !== 'yolparasi');
+    const masrafGruplari = {};
+    masraflar.forEach(k => { const pb = k.paraBirimi || 'TL'; masrafGruplari[pb] = (masrafGruplari[pb]||0) + (Number(k.tutar)||0); });
+    const masrafMetni = Object.keys(masrafGruplari).length === 0 ? 'kayıt yok' :
+      Object.keys(masrafGruplari).map(pb => fmtPara(masrafGruplari[pb], pb)).join(' + ');
+
+    let toplamAlinanMazot = 0;
+    (kayitlar.baslangic || []).forEach(k => toplamAlinanMazot += Number(k.mazot) || 0);
+
+    const bosMu = !aracPlakaDeger && !dorsePlakaDeger && !cikisKayit && masraflar.length === 0 && yolParasiKayitlari.length === 0;
+
+    if(bosMu){
+      kutu.innerHTML = `<div class="resmi-rapor-onizleme-baslik">🔎 Otomatik Çekilecek Veriler</div>
+        <div class="resmi-rapor-onizleme-bos">Henüz plaka, yol günlüğü veya masraf kaydı girilmemiş — Excel oluşturunca bu alanlar boş görünecek.</div>`;
+      return;
+    }
+
+    kutu.innerHTML = `<div class="resmi-rapor-onizleme-baslik">🔎 Otomatik Çekilecek Veriler (Excel'e bunlar otomatik yazılacak)</div>
+      <div class="resmi-rapor-onizleme-satir">🚚 Çekici: <b>${aracPlakaDeger || '(girilmemiş)'}</b> · Dorse: <b>${dorsePlakaDeger || '(girilmemiş)'}</b></div>
+      <div class="resmi-rapor-onizleme-satir">📍 Çıkış: <b>${cikisKayit ? escapeHtml(cikisKayit.sehir||'-') + ' — ' + Number(cikisKayit.km||0).toLocaleString('tr-TR') + ' km / ' + (cikisKayit.mazot||0) + ' L' : '(Yol Günlüğü kaydı yok)'}</b></div>
+      <div class="resmi-rapor-onizleme-satir">📦 Yükleme: <b>${donusKayit ? escapeHtml(donusKayit.sehir||'-') : '(Dönüş Seferi kaydı yok)'}</b></div>
+      <div class="resmi-rapor-onizleme-satir">⛽ Toplam Alınan Mazot: <b>${toplamAlinanMazot.toLocaleString('tr-TR')} L</b></div>
+      <div class="resmi-rapor-onizleme-satir">💸 Masraf Toplamı (Hesap Çizelgesi): <b>${masrafMetni}</b> ${masraflar.length ? `(${masraflar.length} kayıt)` : ''}</div>
+      <div class="resmi-rapor-onizleme-satir">💶 Yol Avansı (Yol Parası kayıtları): <b>${fmtPara(yolParasiTLToplam,'TL')} + ${fmtPara(yolParasiEURToplam,'EUR')}</b> ${yolParasiKayitlari.length ? `(${yolParasiKayitlari.length} kayıt)` : '(kayıt yok)'}</div>`;
   }
 
   // ---- ŞİRKET RESMİ RAPORU (Yurtdışı Şoför Yol Masraf Dökümü) ----
